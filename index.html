@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>氣泡排序法教學動畫</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #333;
+    }
+    .container {
+      margin: 20px auto;
+      width: 80%;
+      max-width: 600px;
+    }
+    .array-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 200px;
+      margin: 20px 0;
+      border: 1px solid #ddd;
+      background-color: #fff;
+    }
+    .array-bar {
+      width: 40px;
+      margin: 0 5px;
+      background-color: #007bff;
+      color: white;
+      text-align: center;
+      border-radius: 5px 5px 0 0;
+      transition: all 0.5s ease; /* 添加動畫效果 */
+    }
+    .array-bar.active {
+      background-color: #ffc107;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button.start {
+      background-color: #28a745;
+      color: white;
+    }
+    button.pause {
+      background-color: #dc3545;
+      color: white;
+    }
+    button.next {
+      background-color: #007bff;
+      color: white;
+    }
+    button.restart {
+      background-color: #6c757d;
+      color: white;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .description {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>氣泡排序法教學動畫</h1>
+  <div class="container">
+    <div class="array-container" id="array-container">
+      <!-- 動態生成長條圖 -->
+    </div>
+    <div class="controls">
+      <button class="start" id="start-btn">開始</button>
+      <button class="pause" id="pause-btn" disabled>暫停</button>
+      <button class="next" id="next-btn" disabled>下一步</button>
+      <button class="restart" id="restart-btn">重新開始</button>
+    </div>
+    <div class="description" id="description">
+      <!-- 動態顯示排序說明 -->
+    </div>
+  </div>
+
+  <script>
+    let array = [];
+    let i = 0, j = 0;
+    let isPaused = true;
+    let intervalId = null;
+
+    const arrayContainer = document.getElementById('array-container');
+    const description = document.getElementById('description');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+
+    // 生成隨機陣列
+    function generateRandomArray(size = 10, min = 1, max = 100) {
+      return Array.from({ length: size }, () => Math.floor(Math.random() * (max - min + 1)) + min);
+    }
+
+    // 初始化陣列顯示
+    function renderArray() {
+      arrayContainer.innerHTML = '';
+      array.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'array-bar';
+        if (index === j || index === j + 1) {
+          bar.classList.add('active');
+        }
+        bar.style.height = `${value * 2}px`;
+        bar.textContent = value;
+        arrayContainer.appendChild(bar);
+      });
+    }
+
+    // 更新說明文字
+    function updateDescription(text) {
+      description.textContent = text;
+    }
+
+    // 氣泡排序的單步操作
+    function bubbleSortStep() {
+      if (i < array.length) {
+        if (j < array.length - i - 1) {
+          if (array[j] > array[j + 1]) {
+            // 交換元素
+            [array[j], array[j + 1]] = [array[j + 1], array[j]];
+            updateDescription(`交換位置 ${j} 和 ${j + 1}，因為 ${array[j + 1]} > ${array[j]}`);
+          } else {
+            updateDescription(`不交換位置 ${j} 和 ${j + 1}，因為 ${array[j]} <= ${array[j + 1]}`);
+          }
+          j++;
+        } else {
+          j = 0;
+          i++;
+        }
+        renderArray();
+      } else {
+        clearInterval(intervalId);
+        startBtn.disabled = true;
+        nextBtn.disabled = true;
+        pauseBtn.disabled = true;
+        updateDescription('排序完成！');
+      }
+    }
+
+    // 開始動畫
+    function startAnimation() {
+      isPaused = false;
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      nextBtn.disabled = true;
+      intervalId = setInterval(bubbleSortStep, 1000);
+    }
+
+    // 暫停動畫
+    function pauseAnimation() {
+      isPaused = true;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      nextBtn.disabled = false;
+      clearInterval(intervalId);
+    }
+
+    // 下一步操作
+    function nextStep() {
+      if (isPaused) {
+        bubbleSortStep();
+      }
+    }
+
+    // 重新開始
+    function restartAnimation() {
+      clearInterval(intervalId);
+      array = generateRandomArray();
+      i = 0;
+      j = 0;
+      isPaused = true;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      nextBtn.disabled = false;
+      updateDescription('重新開始排序');
+      renderArray();
+    }
+
+    // 綁定按鈕事件
+    startBtn.addEventListener('click', startAnimation);
+    pauseBtn.addEventListener('click', pauseAnimation);
+    nextBtn.addEventListener('click', nextStep);
+    restartBtn.addEventListener('click', restartAnimation);
+
+    // 初始化
+    array = generateRandomArray();
+    renderArray();
+    updateDescription('點擊「開始」按鈕以啟動排序動畫');
+  </script>
+</body>
+</html>
