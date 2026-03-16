@@ -3,216 +3,220 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>氣泡排序法動畫</title>
+  <title>氣泡排序法 - 程式對照進階版</title>
   <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --card-bg: #16213e;
+      --primary: #4ecca3; /* 綠色: 已排序 */
+      --secondary: #3498db; /* 藍色: 預設 */
+      --accent: #f7d106; /* 黃色: 比較中 */
+      --danger: #ff4d4d; /* 紅色: 交換中 */
+      --text: #e0e0e0;
+    }
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: linear-gradient(135deg, #1e1e2f, #252540);
-      color: #f4f4f9;
-      margin: 0;
-      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text);
+      margin: 0; padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
     }
-    h1 {
-      color: #fff;
+    .container { width: 95%; max-width: 900px; }
+    
+    .status-panel {
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex; justify-content: space-around;
+      border-bottom: 3px solid var(--secondary);
+      font-weight: bold;
     }
-    .container {
-      margin: 20px auto;
-      width: 80%;
-      max-width: 600px;
+
+    .visual-section {
+      background: #0f3460;
+      border-radius: 15px;
+      padding: 30px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .array-container {
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      height: 300px;
-      margin: 20px 0;
-      border: 1px solid #444;
-      background-color: #2c2c3e;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      display: flex; justify-content: center; align-items: flex-end;
+      height: 220px; gap: 8px;
     }
-    .array-bar {
-      width: 40px;
-      margin: 0 5px;
-      background-color: #007bff;
-      color: white;
-      text-align: center;
-      border-radius: 5px 5px 0 0;
-      transition: all 0.5s ease, transform 0.5s ease; /* 添加動畫效果 */
+    .bar {
+      width: 35px; background: var(--secondary);
+      border-radius: 5px 5px 2px 2px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; justify-content: center; align-items: flex-start;
+      padding-top: 5px; color: #1a1a2e; font-size: 12px; font-weight: bold;
     }
-    .array-bar.active {
-      background-color: #ffc107;
-      transform: scale(1.1); /* 增加形變效果 */
+    .bar.sorted { background: #1b1b2f !important; border: 1px solid var(--primary); color: var(--primary); opacity: 0.6; }
+    .bar.comparing { background: var(--accent) !important; transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
+    .bar.swapping { background: var(--danger) !important; transform: scale(1.1); box-shadow: 0 0 20px var(--danger); }
+
+    .code-section {
+      background: #000; padding: 20px; border-radius: 12px;
+      font-family: 'Consolas', monospace; font-size: 14px;
+      line-height: 1.6; color: #a9b7c6;
+      border-left: 4px solid var(--accent);
     }
-    .controls {
-      margin-top: 20px;
-    }
+    .code-line { padding: 0 10px; transition: 0.2s; border-radius: 4px; }
+    .highlight { background: rgba(247, 209, 6, 0.2); color: #fff; transform: translateX(5px); }
+
+    .controls { margin: 20px 0; display: flex; gap: 10px; justify-content: center; }
     button {
-      margin: 5px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      padding: 10px 20px; border: none; border-radius: 8px;
+      cursor: pointer; font-weight: bold; transition: 0.3s;
     }
-    button.start {
-      background-color: #28a745;
-      color: white;
-    }
-    button.pause {
-      background-color: #dc3545;
-      color: white;
-    }
-    button.next {
-      background-color: #007bff;
-      color: white;
-    }
-    button.restart {
-      background-color: #6c757d;
-      color: white;
-    }
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    .description {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #ddd;
-    }
+    .btn-auto { background: var(--primary); color: white; }
+    .btn-step { background: var(--secondary); color: white; }
+    .btn-reset { background: #95a5a6; color: white; }
+    button:hover { opacity: 0.8; transform: translateY(-2px); }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .desc { text-align: center; margin-top: 10px; font-style: italic; color: var(--accent); height: 24px; }
   </style>
 </head>
 <body>
-  <h1>氣泡排序法動畫</h1>
+
+  <h1>氣泡排序法 (Bubble Sort)</h1>
+
   <div class="container">
-    <div class="array-container" id="array-container">
-      <!-- 動態生成長條圖 -->
+    <div class="status-panel">
+      <div>迴圈 i: <span id="stat-i">-</span></div>
+      <div>當前索引 j: <span id="stat-j">-</span></div>
+      <div>狀態: <span id="stat-op">準備中</span></div>
     </div>
+
+    <div class="visual-section">
+      <div class="array-container" id="container"></div>
+      <div class="desc" id="desc">點擊按鈕開始演示</div>
+    </div>
+
+    <div class="code-section" id="code-box">
+      <div class="code-line" id="line-0">for (let i = 0; i < n - 1; i++) {</div>
+      <div class="code-line" id="line-1">&nbsp;&nbsp;for (let j = 0; j < n - i - 1; j++) {</div>
+      <div class="code-line" id="line-2">&nbsp;&nbsp;&nbsp;&nbsp;if (array[j] > array[j + 1]) { // 比較相鄰元素</div>
+      <div class="code-line" id="line-3">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;swap(array[j], array[j + 1]); // 大的往後換</div>
+      <div class="code-line" id="line-4">&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+      <div class="code-line" id="line-5">&nbsp;&nbsp;}</div>
+      <div class="code-line" id="line-6">}</div>
+    </div>
+
     <div class="controls">
-      <button class="start" id="start-btn">開始</button>
-      <button class="pause" id="pause-btn" disabled>暫停</button>
-      <button class="next" id="next-btn" disabled>下一步</button>
-      <button class="restart" id="restart-btn">重新開始</button>
-    </div>
-    <div class="description" id="description">
-      <!-- 動態顯示排序說明 -->
+      <button class="btn-auto" id="start-btn">自動播放</button>
+      <button class="btn-step" id="next-btn">下一步</button>
+      <button class="btn-reset" id="reset-btn">重置隨機陣列</button>
     </div>
   </div>
 
   <script>
-    let array = [];
-    let i = 0, j = 0;
-    let isPaused = true;
-    let intervalId = null;
+    let arr = [], i = 0, j = 0;
+    let running = false, timer = null;
+    let isSwapping = false;
+    const n = 10;
 
-    const arrayContainer = document.getElementById('array-container');
-    const description = document.getElementById('description');
-    const startBtn = document.getElementById('start-btn');
-    const pauseBtn = document.getElementById('pause-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const restartBtn = document.getElementById('restart-btn');
-
-    // 生成隨機陣列
-    function generateRandomArray(size = 10, min = 1, max = 100) {
-      return Array.from({ length: size }, () => Math.floor(Math.random() * (max - min + 1)) + min);
+    function init() {
+      arr = Array.from({length: n}, () => Math.floor(Math.random() * 85) + 15);
+      i = 0; j = 0; isSwapping = false;
+      updateCode(-1);
+      render();
+      document.getElementById('desc').textContent = "請選擇「自動播放」或「下一步」";
+      document.getElementById('stat-i').textContent = "-";
+      document.getElementById('stat-j').textContent = "-";
+      document.getElementById('stat-op').textContent = "等待中";
     }
 
-    // 初始化陣列顯示
-    function renderArray() {
-      arrayContainer.innerHTML = '';
-      array.forEach((value, index) => {
+    function render() {
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+      arr.forEach((val, idx) => {
         const bar = document.createElement('div');
-        bar.className = 'array-bar';
-        if (index === j || index === j + 1) {
-          bar.classList.add('active');
+        bar.className = 'bar';
+        
+        // 判定顏色
+        if (idx >= n - i) bar.classList.add('sorted');
+        if (idx === j || idx === j + 1) {
+          if (idx < n - i) {
+             bar.classList.add(isSwapping ? 'swapping' : 'comparing');
+          }
         }
-        bar.style.height = `${value * 2}px`;
-        bar.textContent = value;
-        arrayContainer.appendChild(bar);
+
+        bar.style.height = `${val * 2}px`;
+        bar.textContent = val;
+        container.appendChild(bar);
       });
     }
 
-    // 更新說明文字
-    function updateDescription(text) {
-      description.textContent = text;
+    function updateCode(line) {
+      document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+      if (line >= 0) document.getElementById(`line-${line}`).classList.add('highlight');
     }
 
-    // 氣泡排序的單步操作
-    function bubbleSortStep() {
-      if (i < array.length) {
-        if (j < array.length - i - 1) {
-          if (array[j] > array[j + 1]) {
-            // 交換元素
-            [array[j], array[j + 1]] = [array[j + 1], array[j]];
-            updateDescription(`交換位置 ${j} 和 ${j + 1}，因為 ${array[j + 1]} > ${array[j]}`);
-          } else {
-            updateDescription(`不交換位置 ${j} 和 ${j + 1}，因為 ${array[j]} <= ${array[j + 1]}`);
-          }
-          j++;
+    function step() {
+      if (i >= n - 1) {
+        i = n; render();
+        updateCode(-1);
+        document.getElementById('desc').textContent = "排序完成！";
+        document.getElementById('stat-op').textContent = "完成";
+        clearInterval(timer);
+        return;
+      }
+
+      document.getElementById('stat-i').textContent = i;
+      document.getElementById('stat-j').textContent = j;
+
+      if (!isSwapping) {
+        // 比較階段
+        updateCode(2);
+        document.getElementById('stat-op').textContent = "比較中";
+        if (arr[j] > arr[j + 1]) {
+          document.getElementById('desc').textContent = `檢查：${arr[j]} > ${arr[j+1]}，準備交換`;
+          isSwapping = true;
         } else {
-          j = 0;
-          i++;
+          document.getElementById('desc').textContent = `檢查：${arr[j]} <= ${arr[j+1]}，不需交換`;
+          isSwapping = false;
+          moveToNext();
         }
-        renderArray();
       } else {
-        clearInterval(intervalId);
-        startBtn.disabled = true;
-        nextBtn.disabled = true;
-        pauseBtn.disabled = true;
-        updateDescription('排序完成！');
+        // 交換階段
+        updateCode(3);
+        document.getElementById('stat-op').textContent = "執行交換";
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        isSwapping = false;
+        moveToNext();
+      }
+      render();
+    }
+
+    function moveToNext() {
+      j++;
+      if (j >= n - i - 1) {
+        j = 0;
+        i++;
       }
     }
 
-    // 開始動畫
-    function startAnimation() {
-      isPaused = false;
-      startBtn.disabled = true;
-      pauseBtn.disabled = false;
-      nextBtn.disabled = true;
-      intervalId = setInterval(bubbleSortStep, 1000);
-    }
+    document.getElementById('start-btn').onclick = () => {
+      if(running) return;
+      running = true;
+      timer = setInterval(step, 600);
+    };
 
-    // 暫停動畫
-    function pauseAnimation() {
-      isPaused = true;
-      startBtn.disabled = false;
-      pauseBtn.disabled = true;
-      nextBtn.disabled = false;
-      clearInterval(intervalId);
-    }
+    document.getElementById('next-btn').onclick = () => {
+      clearInterval(timer);
+      running = false;
+      step();
+    };
 
-    // 下一步操作
-    function nextStep() {
-      if (isPaused) {
-        bubbleSortStep();
-      }
-    }
+    document.getElementById('reset-btn').onclick = () => {
+      clearInterval(timer);
+      running = false;
+      init();
+    };
 
-    // 重新開始
-    function restartAnimation() {
-      clearInterval(intervalId);
-      array = generateRandomArray();
-      i = 0;
-      j = 0;
-      isPaused = true;
-      startBtn.disabled = false;
-      pauseBtn.disabled = true;
-      nextBtn.disabled = false;
-      updateDescription('重新開始排序');
-      renderArray();
-    }
-
-    // 綁定按鈕事件
-    startBtn.addEventListener('click', startAnimation);
-    pauseBtn.addEventListener('click', pauseAnimation);
-    nextBtn.addEventListener('click', nextStep);
-    restartBtn.addEventListener('click', restartAnimation);
-
-    // 初始化
-    array = generateRandomArray();
-    renderArray();
-    updateDescription('點擊「開始」按鈕以啟動排序動畫');
+    init();
   </script>
 </body>
 </html>
