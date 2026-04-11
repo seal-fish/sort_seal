@@ -4,7 +4,7 @@
 
 [![GitHub repo](https://img.shields.io/badge/GitHub-sort__seal-blue.svg)](https://github.com/seal-fish/sort_seal.git)
 
-[github連結](https://github.com/seal-fish/sort_seal.git)
+[模擬頁面連結](https://seal-fish.github.io/sort_seal/)
 
 
 本專案旨在透過實作五種經典排序演算法，並結合網頁動畫演示與效能實驗，深入分析各演算法在不同數據規模下的表現差異。
