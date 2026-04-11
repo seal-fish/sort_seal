@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合成排序法 - 速度調控進階版</title>
+  <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --card-bg: #16213e;
+      --primary: #4ecca3;   /* 已排序 */
+      --secondary: #3498db; /* 未排序 */
+      --accent: #f7d106;    /* 比較中 */
+      --danger: #ff4d4d;    /* 合併中 */
+      --text: #e0e0e0;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text);
+      margin: 0; padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .container { width: 95%; max-width: 900px; }
+    .legend {
+      display: flex; justify-content: center; gap: 20px;
+      margin-bottom: 15px; background: var(--card-bg);
+      padding: 10px; border-radius: 8px; font-size: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .box { width: 14px; height: 14px; border-radius: 3px; }
+    .status-panel {
+      background: var(--card-bg); padding: 15px; border-radius: 12px;
+      margin-bottom: 20px; display: flex; justify-content: space-around;
+      border-bottom: 3px solid var(--secondary); font-weight: bold;
+    }
+    .visual-section {
+      background: #0f3460; border-radius: 15px; padding: 25px;
+      margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .array-container {
+      display: flex; justify-content: center; align-items: flex-end;
+      height: 180px; gap: 8px;
+    }
+    .bar {
+      width: 35px; background: var(--secondary); border-radius: 5px 5px 2px 2px;
+      transition: all 0.2s ease; display: flex; justify-content: center;
+      align-items: flex-start; padding-top: 5px; color: #1a1a2e;
+      font-size: 12px; font-weight: bold;
+    }
+    .bar.sorted { background: #1b1b2f !important; border: 1px solid var(--primary); color: var(--primary); opacity: 0.6; }
+    .bar.comparing { background: var(--accent) !important; transform: scale(1.1); }
+    .bar.merging { background: var(--danger) !important; transform: scale(1.05); box-shadow: 0 0 15px var(--danger); }
+    .bar.segment {
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.1);
+    }
+    .speed-control {
+      margin-bottom: 20px; display: flex; align-items: center;
+      justify-content: center; gap: 15px; background: var(--card-bg);
+      padding: 10px 20px; border-radius: 30px;
+    }
+    input[type=range] { cursor: pointer; width: 200px; }
+    .code-section {
+      background: #000; padding: 18px; border-radius: 12px;
+      font-family: 'Consolas', monospace; font-size: 14px;
+      line-height: 1.5; color: #a9b7c6; border-left: 4px solid var(--accent);
+    }
+    .code-line { padding: 0 10px; border-radius: 4px; }
+    .highlight { background: rgba(247, 209, 6, 0.2); color: #fff; }
+    .controls { margin: 20px 0; display: flex; gap: 10px; justify-content: center; }
+    button {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      cursor: pointer; font-weight: bold; transition: 0.2s; min-width: 90px;
+    }
+    .btn-start { background: var(--primary); color: white; }
+    .btn-pause { background: #e67e22; color: white; }
+    .btn-step { background: var(--secondary); color: white; }
+    .btn-reset { background: #95a5a6; color: white; }
+    .btn-home { background: #8e44ad; color: white; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    .desc { text-align: center; margin-top: 10px; font-style: italic; color: var(--accent); height: 20px; }
+  </style>
+</head>
+<body>
+  <h1>合成排序法 (Merge Sort)</h1>
+  <div class="container">
+    <div class="legend">
+      <div class="legend-item"><div class="box" style="background:var(--secondary)"></div>未排序</div>
+      <div class="legend-item"><div class="box" style="background:var(--accent)"></div>比較中</div>
+      <div class="legend-item"><div class="box" style="background:var(--danger)"></div>合併中</div>
+      <div class="legend-item"><div class="box" style="border:1px solid var(--primary)"></div>已排序</div>
+    </div>
+
+    <div class="speed-control">
+      <span>慢速</span>
+      <input type="range" id="speed-slider" min="100" max="2000" step="100" value="600" dir="rtl">
+      <span>快速</span>
+      <span id="speed-val">(0.6s)</span>
+    </div>
+
+    <div class="status-panel">
+      <div>目前段: <span id="stat-seg">-</span></div>
+      <div>比較索引: <span id="stat-idx">-</span></div>
+      <div>狀態: <span id="stat-op">準備中</span></div>
+    </div>
+
+    <div class="visual-section">
+      <div class="array-container" id="container"></div>
+      <div class="desc" id="desc">點擊開始演示</div>
+    </div>
+
+    <div class="code-section">
+      <div class="code-line" id="line-0">function mergeSort(l, r) {</div>
+      <div class="code-line" id="line-1">&nbsp;&nbsp;if (l >= r) return;</div>
+      <div class="code-line" id="line-2">&nbsp;&nbsp;const m = Math.floor((l + r) / 2);</div>
+      <div class="code-line" id="line-3">&nbsp;&nbsp;mergeSort(l, m);</div>
+      <div class="code-line" id="line-4">&nbsp;&nbsp;mergeSort(m + 1, r);</div>
+      <div class="code-line" id="line-5">&nbsp;&nbsp;merge(l, m, r);</div>
+      <div class="code-line" id="line-6">}</div>
+      <div class="code-line" id="line-7">function merge(l, m, r) {</div>
+      <div class="code-line" id="line-8">&nbsp;&nbsp;let i = l, j = m + 1, k = l;</div>
+      <div class="code-line" id="line-9">&nbsp;&nbsp;while (i <= m && j <= r) {</div>
+      <div class="code-line" id="line-10">&nbsp;&nbsp;&nbsp;&nbsp;if (arr[i] <= arr[j]) arr[k++] = arr[i++];</div>
+      <div class="code-line" id="line-11">&nbsp;&nbsp;&nbsp;&nbsp;else arr[k++] = arr[j++];</div>
+      <div class="code-line" id="line-12">&nbsp;&nbsp;}</div>
+      <div class="code-line" id="line-13">&nbsp;&nbsp;while (i <= m) arr[k++] = arr[i++];</div>
+      <div class="code-line" id="line-14">&nbsp;&nbsp;while (j <= r) arr[k++] = arr[j++];</div>
+      <div class="code-line" id="line-15">}</div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-start" id="start-btn">自動開始</button>
+      <button class="btn-pause" id="pause-btn" style="display:none;">暫停</button>
+      <button class="btn-step" id="next-btn">下一步</button>
+      <button class="btn-reset" id="reset-btn">重置</button>
+      <button class="btn-home" onclick="window.location.href='index.html'">返回主頁</button>
+    </div>
+  </div>
+
+  <script>
+    let arr = [], n = 10;
+    let actions = [], actionIndex = 0;
+    let timer = null;
+    let speed = 600;
+    let currentSegment = '-';
+
+    const speedSlider = document.getElementById('speed-slider');
+    const speedVal = document.getElementById('speed-val');
+    const statSeg = document.getElementById('stat-seg');
+    const statIdx = document.getElementById('stat-idx');
+    const statOp = document.getElementById('stat-op');
+
+    function init() {
+      arr = Array.from({ length: n }, () => Math.floor(Math.random() * 80) + 20);
+      actions = [];
+      actionIndex = 0;
+      currentSegment = '-';
+      stopAuto();
+      buildActions();
+      render();
+      updateCode(-1);
+      statSeg.textContent = '-';
+      statIdx.textContent = '-';
+      statOp.textContent = '等待中';
+      document.getElementById('desc').textContent = '點擊開始演示';
+    }
+
+    function buildActions() {
+      const tmp = arr.slice();
+      function mergeSim(l, m, r) {
+        const left = tmp.slice(l, m + 1);
+        const right = tmp.slice(m + 1, r + 1);
+        let i = 0, j = 0, k = l;
+        actions.push({ type: 'segment', l, m, r });
+        while (i < left.length && j < right.length) {
+          actions.push({ type: 'compare', i: l + i, j: m + 1 + j, l, r });
+          if (left[i] <= right[j]) {
+            actions.push({ type: 'assign', index: k, value: left[i], source: 'left', l, r });
+            tmp[k++] = left[i++];
+          } else {
+            actions.push({ type: 'assign', index: k, value: right[j], source: 'right', l, r });
+            tmp[k++] = right[j++];
+          }
+        }
+        while (i < left.length) {
+          actions.push({ type: 'assign', index: k, value: left[i], source: 'left', l, r });
+          tmp[k++] = left[i++];
+        }
+        while (j < right.length) {
+          actions.push({ type: 'assign', index: k, value: right[j], source: 'right', l, r });
+          tmp[k++] = right[j++];
+        }
+        actions.push({ type: 'done', l, r });
+      }
+
+      function divide(l, r) {
+        if (l >= r) return;
+        const m = Math.floor((l + r) / 2);
+        divide(l, m);
+        divide(m + 1, r);
+        mergeSim(l, m, r);
+      }
+
+      divide(0, n - 1);
+    }
+
+    function render(highlight = {}) {
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+      arr.forEach((val, idx) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        if (highlight.l !== undefined && idx >= highlight.l && idx <= highlight.r) bar.classList.add('segment');
+        if (highlight.compare && (idx === highlight.i || idx === highlight.j)) bar.classList.add('comparing');
+        if (highlight.merge && idx === highlight.assignIndex) bar.classList.add('merging');
+        if (highlight.sortedRange && idx >= highlight.sortedRange.l && idx <= highlight.sortedRange.r) bar.classList.add('sorted');
+        bar.style.height = `${val * 2}px`;
+        bar.textContent = val;
+        container.appendChild(bar);
+      });
+    }
+
+    function updateCode(line) {
+      document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+      if (line >= 0) document.getElementById(`line-${line}`).classList.add('highlight');
+    }
+
+    function step() {
+      if (actionIndex >= actions.length) {
+        render({ sortedRange: { l: 0, r: n - 1 } });
+        updateCode(-1);
+        statSeg.textContent = '全部';
+        statIdx.textContent = '-';
+        statOp.textContent = '排序完成';
+        document.getElementById('desc').textContent = '排序完成！';
+        stopAuto();
+        return;
+      }
+
+      const action = actions[actionIndex++];
+      if (action.type === 'segment') {
+        currentSegment = `[${action.l}, ${action.r}]`;
+        statSeg.textContent = currentSegment;
+        statOp.textContent = `準備合併 ${action.l}-${action.r}`;
+        updateCode(1);
+        render({ l: action.l, r: action.r });
+        document.getElementById('desc').textContent = `分段: ${action.l} 到 ${action.r}`;
+      } else if (action.type === 'compare') {
+        statSeg.textContent = currentSegment;
+        statIdx.textContent = `${action.i}, ${action.j}`;
+        statOp.textContent = `比較 ${action.i} 與 ${action.j}`;
+        updateCode(9);
+        render({ l: action.l, r: action.r, compare: true, i: action.i, j: action.j });
+        document.getElementById('desc').textContent = `比較 ${arr[action.i]} 與 ${arr[action.j]}`;
+      } else if (action.type === 'assign') {
+        statSeg.textContent = currentSegment;
+        statIdx.textContent = `${action.index}`;
+        statOp.textContent = `寫入 ${action.value}`;
+        updateCode(action.source === 'left' ? 10 : 11);
+        arr[action.index] = action.value;
+        render({ l: action.l, r: action.r, merge: true, assignIndex: action.index });
+        document.getElementById('desc').textContent = `將 ${action.value} 放到索引 ${action.index}`;
+      } else if (action.type === 'done') {
+        statSeg.textContent = currentSegment;
+        statIdx.textContent = '-';
+        statOp.textContent = `完成段 ${action.l}-${action.r}`;
+        updateCode(15);
+        render({ l: action.l, r: action.r, sortedRange: { l: action.l, r: action.r } });
+        document.getElementById('desc').textContent = `段 ${action.l} 到 ${action.r} 已完成排序`;
+      }
+    }
+
+    function startAuto() {
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('pause-btn').style.display = 'inline-block';
+      runTimer();
+    }
+
+    function runTimer() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(step, speed);
+    }
+
+    function stopAuto() {
+      document.getElementById('start-btn').style.display = 'inline-block';
+      document.getElementById('pause-btn').style.display = 'none';
+      clearInterval(timer);
+      timer = null;
+    }
+
+    speedSlider.oninput = function() {
+      speed = parseInt(this.value);
+      speedVal.textContent = `(${(speed / 1000).toFixed(1)}s)`;
+      if (timer) runTimer();
+    }
+
+    document.getElementById('start-btn').onclick = startAuto;
+    document.getElementById('pause-btn').onclick = stopAuto;
+    document.getElementById('next-btn').onclick = () => { stopAuto(); step(); };
+    document.getElementById('reset-btn').onclick = init;
+
+    init();
+  </script>
+</body>
+</html>
